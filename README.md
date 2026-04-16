@@ -39,40 +39,88 @@ cd ai-content-writer
 
 ### 2) Create Virtual Environment (Recommended)
 
+macOS/Linux (zsh/bash):
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
+Windows (PowerShell):
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+Windows (CMD):
+```bat
+python -m venv .venv
+.venv\Scripts\activate.bat
+```
+
 ### 3) Install Dependencies
 
+macOS/Linux:
 ```bash
 python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
 ```
 
+Windows:
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
 ### 4) Set API Key
 
+macOS/Linux:
 ```bash
 export ANTHROPIC_API_KEY="your_anthropic_api_key"
 ```
 
-Optional (persistent in zsh):
+Windows PowerShell:
+```powershell
+$env:ANTHROPIC_API_KEY="your_anthropic_api_key"
+```
 
+Windows CMD:
+```bat
+set ANTHROPIC_API_KEY=your_anthropic_api_key
+```
+
+Optional persistent key:
+
+macOS (`~/.zshrc`):
 ```bash
 echo 'export ANTHROPIC_API_KEY="your_anthropic_api_key"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
+Windows PowerShell (current user):
+```powershell
+[System.Environment]::SetEnvironmentVariable("ANTHROPIC_API_KEY","your_anthropic_api_key","User")
+```
+
 ## Quick Start
 
+macOS/Linux:
 ```bash
-python3 claude_blog_writer.py \
+python3 ./claude_blog_writer.py \
   --url "https://cigmaaccounting.co.uk/understanding-directors-loans/" \
   --prompt-file "cigma_prompt.txt" \
   --model "claude-sonnet-4-6" \
   --format md \
   --out "./output/directors_loan_blog"
+```
+
+Windows:
+```powershell
+python .\claude_blog_writer.py `
+  --url "https://cigmaaccounting.co.uk/understanding-directors-loans/" `
+  --prompt-file ".\cigma_prompt.txt" `
+  --model "claude-sonnet-4-6" `
+  --format md `
+  --out ".\output\directors_loan_blog"
 ```
 
 The above command creates:
@@ -176,6 +224,16 @@ python3 -m pip install --upgrade certifi requests
 ```
 
 If you use venv, reinstall inside that venv.
+
+### 3b) SSL Certificate Verify Failed (Windows)
+
+Run inside your active environment:
+
+```powershell
+python -m pip install --upgrade certifi requests
+```
+
+If you are behind a corporate proxy, configure proxy/SSL trust for your environment.
 
 ### 4) `zsh: command not found` After Pasting Prompt
 
