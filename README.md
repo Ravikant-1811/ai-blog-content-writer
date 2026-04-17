@@ -106,7 +106,6 @@ Notes:
 
 This project is now Vercel-ready with:
 - `app.py` entrypoint
-- `vercel.json` function max duration
 - Serverless-safe output path (`/tmp/generated_outputs` on Vercel)
 
 ### Steps
@@ -116,6 +115,9 @@ This project is now Vercel-ready with:
 3. Add environment variable in Vercel project settings:
    - `ANTHROPIC_API_KEY`
 4. Deploy.
+
+Note:
+- No custom `vercel.json` is required for this setup.
 
 ### Optional CLI Deploy
 
