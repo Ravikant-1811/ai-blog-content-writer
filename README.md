@@ -105,8 +105,8 @@ Notes:
 ## Deploy on Vercel
 
 This project is now Vercel-ready with:
-- `api/index.py` entrypoint
-- `vercel.json` rewrites and max duration
+- `app.py` entrypoint
+- `vercel.json` function max duration
 - Serverless-safe output path (`/tmp/generated_outputs` on Vercel)
 
 ### Steps
