@@ -179,9 +179,9 @@ def index():
             if was_truncated:
                 if info_msg:
                     info_msg += " "
-                info_msg += (
-                    "Output reached token limit and was auto-continued."
-                )
+                info_msg += "Successfully done."
+            elif not info_msg:
+                info_msg = "Successfully done."
 
         except Exception as exc:
             error_msg = str(exc)
