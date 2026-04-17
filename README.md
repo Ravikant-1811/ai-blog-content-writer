@@ -19,6 +19,7 @@ This CLI tool:
 ## Project Files
 
 - `claude_blog_writer.py`: Main CLI script
+- `ui_app.py`: Basic web UI (URL + prompt form, generate output, download PDF/Word)
 - `cigma_prompt.txt`: Sample long-form prompt
 - `requirements.txt`: Python dependencies
 
@@ -70,6 +71,36 @@ Windows:
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
+
+## Web UI (Basic)
+
+You can use a browser-based UI where you:
+- Enter source URL
+- Paste your prompt
+- Generate output
+- Download as PDF and Word (`.docx`)
+
+### Run UI on macOS/Linux
+
+```bash
+python3 ui_app.py
+```
+
+### Run UI on Windows
+
+```powershell
+python ui_app.py
+```
+
+Open:
+
+```text
+http://127.0.0.1:5050
+```
+
+Notes:
+- API key is entered in UI form and used for that request.
+- Generated files are stored in `generated_outputs/`.
 
 ### 4) Set API Key
 
