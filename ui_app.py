@@ -9,6 +9,7 @@ Run:
 
 from __future__ import annotations
 
+import os
 import uuid
 from pathlib import Path
 from typing import Optional
@@ -29,7 +30,13 @@ from claude_blog_writer import (
 
 app = Flask(__name__)
 BASE_DIR = Path(__file__).resolve().parent
-OUTPUT_DIR = BASE_DIR / "generated_outputs"
+
+# Vercel serverless filesystem is read-only except /tmp.
+if os.getenv("VERCEL"):
+    OUTPUT_DIR = Path("/tmp/generated_outputs")
+else:
+    OUTPUT_DIR = BASE_DIR / "generated_outputs"
+
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -183,4 +190,3 @@ def index():
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5050, debug=True)
-

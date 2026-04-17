@@ -102,6 +102,29 @@ Notes:
 - API key is entered in UI form and used for that request.
 - Generated files are stored in `generated_outputs/`.
 
+## Deploy on Vercel
+
+This project is now Vercel-ready with:
+- `api/index.py` entrypoint
+- `vercel.json` rewrites and max duration
+- Serverless-safe output path (`/tmp/generated_outputs` on Vercel)
+
+### Steps
+
+1. Push code to GitHub.
+2. Import repository into Vercel.
+3. Add environment variable in Vercel project settings:
+   - `ANTHROPIC_API_KEY`
+4. Deploy.
+
+### Optional CLI Deploy
+
+```bash
+npm i -g vercel
+vercel
+vercel --prod
+```
+
 ### 4) Set API Key
 
 macOS/Linux:
