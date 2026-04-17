@@ -161,10 +161,16 @@
       {% endif %}
 
       <form method="post">
+        {% if show_api_key_input %}
         <div class="mb-12">
           <label for="api_key">Anthropic API Key</label>
           <input type="password" id="api_key" name="api_key" placeholder="sk-ant-..." required>
         </div>
+        {% else %}
+        <div class="alert info">
+          Backend API key is configured. Using server-side Anthropic key.
+        </div>
+        {% endif %}
 
         <div class="mb-12">
           <label for="url">Source URL</label>
@@ -212,4 +218,3 @@
   </div>
 </body>
 </html>
-

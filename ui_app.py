@@ -81,6 +81,8 @@ def index():
     error_msg = ""
     info_msg = ""
     download_files: dict[str, str] = {}
+    backend_api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+    show_api_key_input = not bool(backend_api_key)
 
     if request.method == "POST":
         data["url"] = (request.form.get("url") or "").strip()
@@ -89,9 +91,12 @@ def index():
         data["max_tokens"] = (request.form.get("max_tokens") or "2500").strip()
         data["temperature"] = (request.form.get("temperature") or "0.4").strip()
 
-        api_key = (request.form.get("api_key") or "").strip()
+        api_key = backend_api_key or (request.form.get("api_key") or "").strip()
         if not api_key:
-            error_msg = "Please enter your Anthropic API key."
+            error_msg = (
+                "Please enter your Anthropic API key, or configure "
+                "ANTHROPIC_API_KEY on the backend."
+            )
             return render_template(
                 "index.html",
                 data=data,
@@ -99,6 +104,7 @@ def index():
                 error_msg=error_msg,
                 info_msg=info_msg,
                 download_files=download_files,
+                show_api_key_input=show_api_key_input,
             )
 
         if not data["url"] or not data["prompt"]:
@@ -110,6 +116,7 @@ def index():
                 error_msg=error_msg,
                 info_msg=info_msg,
                 download_files=download_files,
+                show_api_key_input=show_api_key_input,
             )
 
         try:
@@ -124,6 +131,7 @@ def index():
                 error_msg=error_msg,
                 info_msg=info_msg,
                 download_files=download_files,
+                show_api_key_input=show_api_key_input,
             )
 
         try:
@@ -185,6 +193,7 @@ def index():
         error_msg=error_msg,
         info_msg=info_msg,
         download_files=download_files,
+        show_api_key_input=show_api_key_input,
     )
 
 
