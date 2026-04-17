@@ -127,7 +127,7 @@ def call_claude(
     verify: str | bool,
     max_tokens: int,
     temperature: float,
-) -> str:
+) -> tuple[str, bool]:
     user_content = (
         f"Source URL: {source_url}\n"
         f"Page title: {page_title}\n\n"
@@ -139,42 +139,71 @@ def call_claude(
         "Write original content. Do not copy long chunks from the source."
     )
 
-    payload = {
-        "model": model,
-        "max_tokens": max_tokens,
-        "temperature": temperature,
-        "messages": [{"role": "user", "content": user_content}],
-    }
-
     headers = {
         "content-type": "application/json",
         "x-api-key": api_key,
         "anthropic-version": API_VERSION,
     }
+    messages: list[dict[str, str]] = [{"role": "user", "content": user_content}]
+    full_output_parts: list[str] = []
+    max_continuations = 3
+    was_truncated = False
 
-    response = session.post(
-        API_URL,
-        headers=headers,
-        json=payload,
-        timeout=120,
-        verify=verify,
-    )
-    if response.status_code >= 400:
-        raise RuntimeError(
-            f"Claude API HTTP {response.status_code}: {response.text}"
+    for continuation_index in range(max_continuations + 1):
+        payload = {
+            "model": model,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "messages": messages,
+        }
+
+        response = session.post(
+            API_URL,
+            headers=headers,
+            json=payload,
+            timeout=120,
+            verify=verify,
+        )
+        if response.status_code >= 400:
+            raise RuntimeError(
+                f"Claude API HTTP {response.status_code}: {response.text}"
+            )
+
+        data = response.json()
+        chunks = data.get("content", [])
+        texts: list[str] = []
+        for chunk in chunks:
+            if chunk.get("type") == "text":
+                texts.append(chunk.get("text", ""))
+
+        part = "\n".join(t.strip() for t in texts if t.strip()).strip()
+        if part:
+            full_output_parts.append(part)
+
+        stop_reason = data.get("stop_reason")
+        if stop_reason != "max_tokens":
+            break
+
+        was_truncated = True
+        if continuation_index >= max_continuations:
+            break
+
+        messages.append({"role": "assistant", "content": part})
+        messages.append(
+            {
+                "role": "user",
+                "content": (
+                    "Continue exactly from where you stopped. "
+                    "Do not repeat previous text. "
+                    "Return only the remaining part."
+                ),
+            }
         )
 
-    data = response.json()
-    chunks = data.get("content", [])
-    texts: list[str] = []
-    for chunk in chunks:
-        if chunk.get("type") == "text":
-            texts.append(chunk.get("text", ""))
-
-    answer = "\n".join(t.strip() for t in texts if t.strip()).strip()
+    answer = "\n\n".join(x for x in full_output_parts if x).strip()
     if not answer:
         raise RuntimeError("Claude API returned no text output.")
-    return answer
+    return answer, was_truncated
 
 
 def save_text_output(out_base: Path, content: str, fmt: str) -> Path:
@@ -261,7 +290,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--max-tokens",
         type=int,
-        default=1800,
+        default=2500,
         help="Max tokens for Claude output.",
     )
     parser.add_argument(
@@ -304,7 +333,7 @@ def main() -> int:
         validate_source_url(args.url)
         html = fetch_url_html(session, args.url, verify=verify_bundle)
         page_title, page_text = html_to_text(html)
-        result = call_claude(
+        result, was_truncated = call_claude(
             session=session,
             api_key=api_key,
             model=args.model,
@@ -339,12 +368,24 @@ def main() -> int:
     if args.format in {"txt", "md"}:
         out_file = save_text_output(out_base, result, args.format)
         print(f"Saved: {out_file}")
+        if was_truncated:
+            print(
+                "Warning: Output hit max token limit and was auto-continued. "
+                "If still incomplete, rerun with higher --max-tokens.",
+                file=sys.stderr,
+            )
         return 0
 
     # PDF mode
     pdf_file = save_pdf_output(out_base, result)
     if pdf_file is not None:
         print(f"Saved: {pdf_file}")
+        if was_truncated:
+            print(
+                "Warning: Output hit max token limit and was auto-continued. "
+                "If still incomplete, rerun with higher --max-tokens.",
+                file=sys.stderr,
+            )
         return 0
 
     # Fallback to markdown when reportlab is not installed.
