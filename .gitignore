@@ -1,6 +1,9 @@
 .venv/
 __pycache__/
 generated_outputs/
+auth.db*
+*.sqlite
+*.sqlite3
 *.pyc
 *.pyo
 *.pyd

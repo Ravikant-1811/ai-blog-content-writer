@@ -107,6 +107,7 @@ Notes:
 This project is now Vercel-ready with:
 - `app.py` entrypoint
 - Serverless-safe output path (`/tmp/generated_outputs` on Vercel)
+- Session-based authentication for the web UI
 
 ### Steps
 
@@ -118,6 +119,9 @@ This project is now Vercel-ready with:
 
 Note:
 - No custom `vercel.json` is required for this setup.
+- The auth database uses SQLite. For local development it lives at `ai-content-writer/auth.db`.
+- Set `FLASK_SECRET_KEY` in production so sessions stay signed with a stable secret.
+- If you want persistent user accounts in a hosted environment, point `AUTH_DB_PATH` at durable storage.
 
 ### Optional CLI Deploy
 

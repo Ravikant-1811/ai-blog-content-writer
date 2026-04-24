@@ -11,10 +11,25 @@ from __future__ import annotations
 
 import os
 import uuid
+from datetime import timedelta
 from pathlib import Path
 from typing import Optional
 
-from flask import Flask, abort, render_template, request, send_from_directory
+from functools import wraps
+
+from flask import (
+    Flask,
+    abort,
+    flash,
+    g,
+    redirect,
+    render_template,
+    request,
+    session,
+    send_from_directory,
+    url_for,
+)
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from claude_blog_writer import (
     DEFAULT_MODEL,
@@ -26,10 +41,18 @@ from claude_blog_writer import (
     save_pdf_output,
     validate_source_url,
 )
+from auth_store import create_user, fetch_user_by_email, fetch_user_by_id, init_db
 
 
 app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", os.getenv("SECRET_KEY", "dev-change-me"))
+app.permanent_session_lifetime = timedelta(days=7)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+)
 BASE_DIR = Path(__file__).resolve().parent
+PUBLIC_ENDPOINTS = {"login", "register", "logout", "static"}
 
 # Vercel serverless filesystem is read-only except /tmp.
 if os.getenv("VERCEL"):
@@ -38,6 +61,44 @@ else:
     OUTPUT_DIR = BASE_DIR / "generated_outputs"
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+init_db()
+
+
+def login_required(view):
+    @wraps(view)
+    def wrapped_view(*args, **kwargs):
+        if g.user is None:
+            flash("Please sign in to access the writer.", "notice")
+            return redirect(url_for("login"))
+        return view(*args, **kwargs)
+
+    return wrapped_view
+
+
+@app.before_request
+def load_current_user():
+    user_id = session.get("user_id")
+    user = fetch_user_by_id(user_id) if user_id else None
+    if user_id and user is None:
+        session.clear()
+    g.user = user
+
+    if request.endpoint and request.endpoint not in PUBLIC_ENDPOINTS and g.user is None:
+        flash("Please sign in to access the writer.", "notice")
+        return redirect(url_for("login", next=request.path))
+
+
+@app.context_processor
+def inject_current_user():
+    return {"current_user": getattr(g, "user", None)}
+
+
+def _safe_next_target(raw_target: str | None) -> str | None:
+    if not raw_target:
+        return None
+    if raw_target.startswith("/") and not raw_target.startswith("//"):
+        return raw_target
+    return None
 
 
 def save_docx_output(out_base: Path, content: str) -> Optional[Path]:
@@ -57,7 +118,96 @@ def save_docx_output(out_base: Path, content: str) -> Optional[Path]:
     return out_file
 
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if g.user is not None:
+        return redirect(url_for("index"))
+
+    error_msg = ""
+    form = {"email": ""}
+    next_target = _safe_next_target(request.args.get("next"))
+
+    if request.method == "POST":
+        form["email"] = (request.form.get("email") or "").strip()
+        password = request.form.get("password") or ""
+        next_target = _safe_next_target(request.form.get("next")) or next_target
+
+        user = fetch_user_by_email(form["email"])
+        if user is None or not check_password_hash(user["password_hash"], password):
+            error_msg = "Invalid email or password."
+        else:
+            session.clear()
+            session.permanent = True
+            session["user_id"] = user["id"]
+            flash(f"Welcome back, {user['name']}!", "info")
+            return redirect(next_target or url_for("index"))
+
+    return render_template(
+        "auth.html",
+        page_title="Sign in",
+        heading="Sign in",
+        subheading="Use your account to access the content writer.",
+        mode="login",
+        form=form,
+        error_msg=error_msg,
+        next_target=next_target,
+    )
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if g.user is not None:
+        return redirect(url_for("index"))
+
+    error_msg = ""
+    form = {"name": "", "email": ""}
+    next_target = _safe_next_target(request.args.get("next"))
+
+    if request.method == "POST":
+        form["name"] = (request.form.get("name") or "").strip()
+        form["email"] = (request.form.get("email") or "").strip()
+        password = request.form.get("password") or ""
+        confirm_password = request.form.get("confirm_password") or ""
+        next_target = _safe_next_target(request.form.get("next")) or next_target
+
+        if not form["name"] or not form["email"] or not password:
+            error_msg = "Name, email, and password are required."
+        elif len(password) < 8:
+            error_msg = "Password must be at least 8 characters long."
+        elif password != confirm_password:
+            error_msg = "Passwords do not match."
+        elif fetch_user_by_email(form["email"]) is not None:
+            error_msg = "An account with that email already exists."
+        else:
+            password_hash = generate_password_hash(password)
+            user = create_user(form["name"], form["email"], password_hash)
+            session.clear()
+            session.permanent = True
+            session["user_id"] = user["id"]
+            flash("Account created successfully.", "info")
+            return redirect(next_target or url_for("index"))
+
+    return render_template(
+        "auth.html",
+        page_title="Create account",
+        heading="Create account",
+        subheading="Set up the workspace account for content generation.",
+        mode="register",
+        form=form,
+        error_msg=error_msg,
+        next_target=next_target,
+    )
+
+
+@app.get("/logout")
+def logout():
+    session.clear()
+    flash("You have been signed out.", "info")
+    return redirect(url_for("login"))
+
+
 @app.get("/download/<path:filename>")
+@login_required
 def download_file(filename: str):
     safe_name = Path(filename).name
     if safe_name != filename:
@@ -69,6 +219,7 @@ def download_file(filename: str):
 
 
 @app.route("/", methods=["GET", "POST"])
+@login_required
 def index():
     data = {
         "url": "",

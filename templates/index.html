@@ -1,220 +1,80 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI Blog Content Writer</title>
-  <style>
-    :root {
-      --bg: #f4f7fb;
-      --card: #ffffff;
-      --text: #1f2937;
-      --muted: #6b7280;
-      --accent: #0f766e;
-      --accent-dark: #115e59;
-      --danger: #b91c1c;
-      --ok: #065f46;
-      --border: #d1d5db;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: "Segoe UI", Tahoma, sans-serif;
-      background: linear-gradient(180deg, #eef5ff 0%, var(--bg) 100%);
-      color: var(--text);
-    }
-    .container {
-      max-width: 980px;
-      margin: 24px auto;
-      padding: 0 16px 24px;
-    }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px;
-      box-shadow: 0 10px 28px rgba(10, 20, 40, 0.06);
-      margin-bottom: 16px;
-    }
-    h1 {
-      margin: 0 0 8px;
-      font-size: 28px;
-    }
-    .sub {
-      color: var(--muted);
-      margin: 0;
-    }
-    label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-    input[type="text"],
-    input[type="password"],
-    input[type="number"],
-    textarea {
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 12px;
-      font-size: 14px;
-      outline: none;
-      background: #fff;
-    }
-    input:focus, textarea:focus {
-      border-color: #0ea5e9;
-      box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
-    }
-    textarea {
-      min-height: 220px;
-      resize: vertical;
-      line-height: 1.5;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .grid-3 {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      gap: 12px;
-    }
-    .mb-12 { margin-bottom: 12px; }
-    .mb-16 { margin-bottom: 16px; }
-    .btn {
-      display: inline-block;
-      border: none;
-      border-radius: 10px;
-      background: var(--accent);
-      color: #fff;
-      padding: 11px 16px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .btn:hover {
-      background: var(--accent-dark);
-    }
-    .actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-    }
-    .btn-link {
-      text-decoration: none;
-      padding: 9px 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      color: var(--text);
-      background: #fff;
-      font-weight: 600;
-    }
-    .btn-link:hover { background: #f9fafb; }
-    .alert {
-      border-radius: 10px;
-      padding: 10px 12px;
-      margin-bottom: 10px;
-      font-size: 14px;
-    }
-    .alert.error {
-      color: var(--danger);
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-    }
-    .alert.info {
-      color: var(--ok);
-      background: #ecfdf5;
-      border: 1px solid #a7f3d0;
-    }
-    pre {
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px;
-      background: #fafafa;
-      max-height: 520px;
-      overflow: auto;
-      margin: 0;
-      line-height: 1.45;
-      font-size: 14px;
-    }
-    @media (max-width: 860px) {
-      .grid, .grid-3 { grid-template-columns: 1fr; }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="card">
+{% extends "base.html" %}
+{% block content %}
+  <div class="topbar">
+    <div>
       <h1>AI Blog Content Writer</h1>
       <p class="sub">Enter URL + prompt, generate content, then download as PDF or Word.</p>
     </div>
-
-    <div class="card">
-      {% if error_msg %}
-      <div class="alert error">{{ error_msg }}</div>
-      {% endif %}
-      {% if info_msg %}
-      <div class="alert info">{{ info_msg }}</div>
-      {% endif %}
-
-      <form method="post">
-        {% if show_api_key_input %}
-        <div class="mb-12">
-          <label for="api_key">Anthropic API Key</label>
-          <input type="password" id="api_key" name="api_key" placeholder="sk-ant-..." required>
-        </div>
-        {% else %}
-        <div class="alert info">
-          Backend API key is configured. Using server-side Anthropic key.
-        </div>
-        {% endif %}
-
-        <div class="mb-12">
-          <label for="url">Source URL</label>
-          <input type="text" id="url" name="url" value="{{ data.url }}" placeholder="https://example.com/page" required>
-        </div>
-
-        <div class="mb-12">
-          <label for="prompt">Prompt</label>
-          <textarea id="prompt" name="prompt" placeholder="Write your full instructions here..." required>{{ data.prompt }}</textarea>
-        </div>
-
-        <div class="grid-3 mb-16">
-          <div>
-            <label for="model">Model</label>
-            <input type="text" id="model" name="model" value="{{ data.model }}">
-          </div>
-          <div>
-            <label for="max_tokens">Max Tokens</label>
-            <input type="number" id="max_tokens" name="max_tokens" value="{{ data.max_tokens }}">
-          </div>
-          <div>
-            <label for="temperature">Temperature</label>
-            <input type="text" id="temperature" name="temperature" value="{{ data.temperature }}">
-          </div>
-        </div>
-
-        <button class="btn" type="submit">Generate Content</button>
-      </form>
+    <div class="topbar__user">
+      <span class="pill">Signed in as {{ current_user.name }}</span>
+      <a class="btn-link" href="{{ url_for('logout') }}">Logout</a>
     </div>
+  </div>
 
-    {% if result_text %}
-    <div class="card">
-      <h2 style="margin-top:0;">Generated Output</h2>
-      <pre>{{ result_text }}</pre>
+  <div class="card">
+    {% if error_msg %}
+    <div class="alert error">{{ error_msg }}</div>
+    {% endif %}
+    {% if info_msg %}
+    <div class="alert info">{{ info_msg }}</div>
+    {% endif %}
+    {% for category, message in get_flashed_messages(with_categories=True) %}
+      <div class="alert {{ category }}">{{ message }}</div>
+    {% endfor %}
 
-      {% if download_files %}
-      <div class="actions">
-        {% for label, file_name in download_files.items() %}
-        <a class="btn-link" href="{{ url_for('download_file', filename=file_name) }}">Download {{ label }}</a>
-        {% endfor %}
+    <form method="post">
+      {% if show_api_key_input %}
+      <div class="mb-12">
+        <label for="api_key">Anthropic API Key</label>
+        <input type="password" id="api_key" name="api_key" placeholder="sk-ant-..." required>
+      </div>
+      {% else %}
+      <div class="alert info">
+        Backend API key is configured. Using server-side Anthropic key.
       </div>
       {% endif %}
+
+      <div class="mb-12">
+        <label for="url">Source URL</label>
+        <input type="text" id="url" name="url" value="{{ data.url }}" placeholder="https://example.com/page" required>
+      </div>
+
+      <div class="mb-12">
+        <label for="prompt">Prompt</label>
+        <textarea id="prompt" name="prompt" placeholder="Write your full instructions here..." required>{{ data.prompt }}</textarea>
+      </div>
+
+      <div class="grid-3 mb-16">
+        <div>
+          <label for="model">Model</label>
+          <input type="text" id="model" name="model" value="{{ data.model }}">
+        </div>
+        <div>
+          <label for="max_tokens">Max Tokens</label>
+          <input type="number" id="max_tokens" name="max_tokens" value="{{ data.max_tokens }}">
+        </div>
+        <div>
+          <label for="temperature">Temperature</label>
+          <input type="text" id="temperature" name="temperature" value="{{ data.temperature }}">
+        </div>
+      </div>
+
+      <button class="btn" type="submit">Generate Content</button>
+    </form>
+  </div>
+
+  {% if result_text %}
+  <div class="card">
+    <h2>Generated Output</h2>
+    <pre>{{ result_text }}</pre>
+
+    {% if download_files %}
+    <div class="actions">
+      {% for label, file_name in download_files.items() %}
+      <a class="btn-link" href="{{ url_for('download_file', filename=file_name) }}">Download {{ label }}</a>
+      {% endfor %}
     </div>
     {% endif %}
   </div>
-</body>
-</html>
+  {% endif %}
+{% endblock %}

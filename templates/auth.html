@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }} - AI Blog Content Writer{% endblock %}
+{% block content %}
+<div class="auth-shell">
+  <section class="auth-panel">
+    <div>
+      <span class="auth-badge">Protected workspace</span>
+      <h1 style="margin-top:16px;">AI Blog Content Writer</h1>
+      <p class="auth-copy">
+        Sign in to generate content from a source URL, keep downloads tied to your workspace, and protect the writing tools behind an account.
+      </p>
+      <div class="auth-points">
+        <div class="auth-point">Login and registration are backed by hashed passwords and server-side sessions.</div>
+        <div class="auth-point">The generator, output downloads, and saved files are only available after authentication.</div>
+        <div class="auth-point">Local development uses SQLite. Point `AUTH_DB_PATH` at persistent storage for production.</div>
+      </div>
+    </div>
+    <p class="sub">Built for the ai-content-writer project.</p>
+  </section>
+
+  <section class="auth-form">
+    <h2>{{ heading }}</h2>
+    <p class="sub" style="margin-bottom:16px;">{{ subheading }}</p>
+
+    {% if error_msg %}
+    <div class="alert error">{{ error_msg }}</div>
+    {% endif %}
+    {% for category, message in get_flashed_messages(with_categories=True) %}
+      <div class="alert {{ category }}">{{ message }}</div>
+    {% endfor %}
+
+    {% if mode == "login" %}
+    <form method="post" class="mb-12">
+      <input type="hidden" name="next" value="{{ next_target or '' }}">
+      <div class="mb-12">
+        <label for="email">Email</label>
+        <input type="text" id="email" name="email" value="{{ form.email }}" autocomplete="email" required>
+      </div>
+      <div class="mb-12">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn" type="submit">Sign in</button>
+    </form>
+    <p class="sub">No account yet? <a class="muted-link" href="{{ url_for('register') }}">Create one</a>.</p>
+    {% else %}
+    <form method="post" class="mb-12">
+      <input type="hidden" name="next" value="{{ next_target or '' }}">
+      <div class="mb-12">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" value="{{ form.name }}" autocomplete="name" required>
+      </div>
+      <div class="mb-12">
+        <label for="email">Email</label>
+        <input type="text" id="email" name="email" value="{{ form.email }}" autocomplete="email" required>
+      </div>
+      <div class="mb-12">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="new-password" required>
+      </div>
+      <div class="mb-12">
+        <label for="confirm_password">Confirm Password</label>
+        <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" required>
+      </div>
+      <button class="btn" type="submit">Create account</button>
+    </form>
+    <p class="sub">Already have an account? <a class="muted-link" href="{{ url_for('login') }}">Sign in</a>.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
