@@ -9,7 +9,10 @@ from typing import Iterator
 
 
 BASE_DIR = Path(__file__).resolve().parent
-DEFAULT_DB_PATH = BASE_DIR / "auth.db"
+if os.getenv("VERCEL"):
+    DEFAULT_DB_PATH = Path("/tmp/auth.db")
+else:
+    DEFAULT_DB_PATH = BASE_DIR / "auth.db"
 DB_PATH = Path(os.getenv("AUTH_DB_PATH", str(DEFAULT_DB_PATH))).expanduser().resolve()
 
 
